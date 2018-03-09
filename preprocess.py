@@ -1,5 +1,5 @@
 
-def text2dic(text_list):
+def parse(text_list):
     document = {}
     for i, line in enumerate(text_list):
         if line.find('#DocID') >= 0:
@@ -16,7 +16,7 @@ def text2dic(text_list):
     return document
 
 
-def read_data(file_path):
+def text2dics(file_path):
     # create text stream
     f = open(file_path, "r", encoding='utf-8')
 
@@ -33,11 +33,11 @@ def read_data(file_path):
         elif line == '@DOCUMENT' and start_doc_idx >= 0:
             next_doc_idx = i
             text_doc = text_lines[start_doc_idx:next_doc_idx]
-            documents.append(text2dic(text_doc))
+            documents.append(parse(text_doc))
             start_doc_idx = next_doc_idx
 
     # last document
-    documents.append(text2dic(text_lines[next_doc_idx:]))
+    documents.append(parse(text_lines[next_doc_idx:]))
 
     f.close()
     return documents
