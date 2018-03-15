@@ -1,2 +1,2 @@
 # document-classifier
-document classifiers
+classify documents using SVM(Support Vector Machine)

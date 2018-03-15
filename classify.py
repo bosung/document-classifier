@@ -14,6 +14,14 @@ komoran = Komoran()
 word_index_dict = {}
 
 
+def trim_sentence(sentence):
+    words = list()
+    for morph, pos in komoran.pos(sentence):
+        if pos[0] not in ('J', 'E', 'S'):
+           words.append(morph)
+    return words
+
+
 def get_all_docs(data_path):
     # get only .txt files
     files = glob.glob(data_path + '/*.txt')
@@ -33,16 +41,16 @@ def word_counting(documents):
         text = doc['text']
         doc['bow'] = {}
         for sentence in text:
-            nouns = komoran.nouns(sentence)
-            for n in nouns:
-                if n not in word_index_dict:
-                    word_index_dict[n] = word_idx
+            words = trim_sentence(sentence)
+            for w in words:
+                if w not in word_index_dict:
+                    word_index_dict[w] = word_idx
                     word_idx += 1
 
-                if n not in doc['bow']:
-                    doc['bow'][n] = 1
+                if w not in doc['bow']:
+                    doc['bow'][w] = 1
                 else:
-                    doc['bow'][n] += 1
+                    doc['bow'][w] += 1
 
 
 def bag_of_words(document):
@@ -131,7 +139,7 @@ if __name__ == "__main__":
     print("total words: {} {}".format(len(word_index_dict), word_idx))
 
     global category_dict
-    category_dict = preprocess.get_category_dict(args.cat_file)
+    category_dict = preprocess.get_category_dict(args.category_file)
 
     shuffle(documents)
 
@@ -143,4 +151,5 @@ if __name__ == "__main__":
         model = train(train_index, documents)
         total_accuracy += test(test_index, model, documents)
 
-    print("average accuracy: %.3f" % total_accuracy/args.split)
+    print("average accuracy: %.3f" % (total_accuracy/int(args.split)))
+
