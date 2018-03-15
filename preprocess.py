@@ -42,3 +42,19 @@ def text2dics(file_path):
     f.close()
     return documents
 
+
+def get_category_dict(file_path):
+    f = open(file_path, "r", encoding='utf-8')
+
+    category_dict = {}
+    for line in f.readlines():
+        if line[0] == '#':
+            continue
+        cat = {}
+        cat['cat_id'], cat['root'], cat['middle'], cat['leaf'] = \
+                [x.strip() for x in line.split("/")]
+        category_dict[cat['leaf']] = cat
+
+    f.close()
+    return category_dict
+
