@@ -2,6 +2,7 @@ import argparse
 import glob
 import numpy as np
 
+from model import Features
 from konlpy.tag import Komoran
 from random import shuffle
 from sklearn.svm import LinearSVC
@@ -13,20 +14,23 @@ import preprocess
 komoran = Komoran()
 word_index_dict = {}
 
+test_categories = ['52', '30', '35', '11', '51', '196', '39', '36']
+
 
 def trim_sentence(sentence):
-    words = list()
-    for morph, pos in komoran.pos(sentence):
-        if pos[0] not in ('J', 'E', 'S'):
-           words.append(morph)
-    return words
+    #words = list()
+    #for morph, pos in komoran.pos(sentence):
+    #    if pos[0] not in ('J', 'E', 'S'):
+    #       words.append(morph)
+    #return words
+    return komoran.nouns(sentence)
 
 
 def get_all_docs(data_path):
     # get only .txt files
     files = glob.glob(data_path + '/*.txt')
 
-    docs = []
+    docs = list()
     for f in files:
         docs += preprocess.text2dics(f)
 
@@ -34,42 +38,31 @@ def get_all_docs(data_path):
 
 
 def word_counting(documents):
-    global word_idx
-    word_idx = 0
+    global word_size
+    word_size = 0
     # TODO: need to fix with more efficient way
     for doc in documents:
-        text = doc['text']
-        doc['bow'] = {}
+        text = doc.text
         for sentence in text:
             words = trim_sentence(sentence)
             for w in words:
                 if w not in word_index_dict:
-                    word_index_dict[w] = word_idx
-                    word_idx += 1
+                    word_index_dict[w] = word_size
+                    word_size += 1
 
-                if w not in doc['bow']:
-                    doc['bow'][w] = 1
+                if w not in doc.bow:
+                    doc.bow[w] = 1
                 else:
-                    doc['bow'][w] += 1
-
-
-def bag_of_words(document):
-    global word_idx
-    vector = np.zeros(word_idx)
-    for w in list(document['bow'].keys()):
-        w_idx = word_index_dict[w]
-        vector[w_idx] = document['bow'][w]
-
-    return vector
+                    doc.bow[w] += 1
 
 
 def get_category_id(document):
     global category_dict
-    category = document['cat03'].split("/")[-1].strip()
+    category = document.category.split("/")[-1].strip()
     return category_dict[category]['cat_id']
 
 
-def make_xy_params(documents):
+def make_xy_params(documents, features):
     """make X, y parameters for sklearn.svm
         X: feature vector matrix
         y: class vector
@@ -83,27 +76,27 @@ def make_xy_params(documents):
     y = list()
     for doc in documents:
         category_id = get_category_id(doc)
-        X.append(np.array(bag_of_words(doc)))
+        X.append(features.get_feature_vector(doc))
         y.append(category_id)
 
     return np.array(X), np.array(y)
 
 
-def train(train_index, documents):
+def train(train_index, documents, features):
     train_data = [documents[i] for i in train_index]
     clf = LinearSVC(random_state=0)
-    X, y = make_xy_params(train_data)
+    X, y = make_xy_params(train_data, features)
     clf.fit(X, y)
     return clf
 
 
-def test(test_index, model, documents):
+def test(test_index, model, documents, features):
     total_size = len(test_index)
     ans_cnt = 0
     for i in test_index:
         document = documents[i]
         category = get_category_id(document)
-        prediction = model.predict([bag_of_words(document)])
+        prediction = model.predict([features.get_feature_vector(document)])
 
         if prediction[0] == category:
             ans_cnt += 1
@@ -132,15 +125,20 @@ if __name__ == "__main__":
         print("Need a data/file path")
         exit()
 
-    print("total document size: {}".format(len(documents)))
-
-    global word_idx
-    word_counting(documents)
-    print("total words: {} {}".format(len(word_index_dict), word_idx))
-
     global category_dict
     category_dict = preprocess.get_category_dict(args.category_file)
 
+    # restrict category for test
+    documents = [d for d in documents if get_category_id(d) in test_categories]
+
+    print("total document size: {}".format(len(documents)))
+
+    global word_size
+    word_counting(documents)
+    print("total words: {} {}".format(len(word_index_dict), word_size))
+    features = Features(word_size, word_index_dict)
+
+    # train and test
     shuffle(documents)
 
     kf = KFold(n_splits=int(args.split))
@@ -148,8 +146,8 @@ if __name__ == "__main__":
 
     total_accuracy = 0
     for train_index, test_index in kf.split(documents):
-        model = train(train_index, documents)
-        total_accuracy += test(test_index, model, documents)
+        model = train(train_index, documents, features)
+        total_accuracy += test(test_index, model, documents, features)
 
     print("average accuracy: %.3f" % (total_accuracy/int(args.split)))
 

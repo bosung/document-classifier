@@ -1,19 +1,17 @@
+from model import Document
 
 def parse(text_list):
-    document = {}
     for i, line in enumerate(text_list):
         if line.find('#DocID') >= 0:
-            document['docid'] = line.split(":")[1].strip()
+            docid = line.split(":")[1].strip()
         elif line.find('#CAT\'03') >= 0:
-            document['cat03'] = line.split(":")[1].strip()
-        elif line.find('#CAT\'07') >= 0:
-            document['cat07'] = line.split(":")[1].strip()
+            category = line.split(":")[1].strip()
         elif line.find('#TITLE') >= 0:
-            document['title'] = line.split(":")[1].strip()
+            title = line.split(":")[1].strip()
         elif line.find('#TEXT') >= 0:
-            document['text'] = [t for t in text_list[i+1:] if t != '' and t != '\n']
+            text = [t for t in text_list[i+1:] if t != '' and t != '\n']
 
-    return document
+    return Document(docid, category, title, text)
 
 
 def text2dics(file_path):
@@ -44,6 +42,8 @@ def text2dics(file_path):
 
 
 def get_category_dict(file_path):
+    """read category list file and return 'category name' to 'id' dictionary
+    """
     f = open(file_path, "r", encoding='utf-8')
 
     category_dict = {}
