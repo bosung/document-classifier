@@ -3,27 +3,12 @@ import glob
 import numpy as np
 
 from model import Features
-from konlpy.tag import Komoran
 from random import shuffle
 from sklearn.svm import LinearSVC
 from sklearn.datasets import make_classification
 from sklearn.model_selection import KFold
 
 import preprocess
-
-komoran = Komoran()
-word_index_dict = {}
-
-test_categories = ['52', '30', '35', '11', '51', '196', '39', '36']
-
-
-def trim_sentence(sentence):
-    #words = list()
-    #for morph, pos in komoran.pos(sentence):
-    #    if pos[0] not in ('J', 'E', 'S'):
-    #       words.append(morph)
-    #return words
-    return komoran.nouns(sentence)
 
 
 def get_all_docs(data_path):
@@ -35,25 +20,6 @@ def get_all_docs(data_path):
         docs += preprocess.text2dics(f)
 
     return docs
-
-
-def word_counting(documents):
-    global word_size
-    word_size = 0
-    # TODO: need to fix with more efficient way
-    for doc in documents:
-        text = doc.text
-        for sentence in text:
-            words = trim_sentence(sentence)
-            for w in words:
-                if w not in word_index_dict:
-                    word_index_dict[w] = word_size
-                    word_size += 1
-
-                if w not in doc.bow:
-                    doc.bow[w] = 1
-                else:
-                    doc.bow[w] += 1
 
 
 def get_category_id(document):
@@ -72,8 +38,7 @@ def make_xy_params(documents, features):
         y = np.array([1, 1, 2, 2])
     """
 
-    X = list()
-    y = list()
+    X, y = list(), list()
     for doc in documents:
         category_id = get_category_id(doc)
         X.append(features.get_feature_vector(doc))
@@ -97,7 +62,6 @@ def test(test_index, model, documents, features):
         document = documents[i]
         category = get_category_id(document)
         prediction = model.predict([features.get_feature_vector(document)])
-
         if prediction[0] == category:
             ans_cnt += 1
 
@@ -128,17 +92,18 @@ if __name__ == "__main__":
     global category_dict
     category_dict = preprocess.get_category_dict(args.category_file)
 
-    # restrict category for test
-    documents = [d for d in documents if get_category_id(d) in test_categories]
-
     print("total document size: {}".format(len(documents)))
 
-    global word_size
-    word_counting(documents)
-    print("total words: {} {}".format(len(word_index_dict), word_size))
-    features = Features(word_size, word_index_dict)
+    features = Features(documents)
+    print("total words: {} {}".format(len(features.word_index_dict.keys()), features.word_size))
 
+    ################
     # train and test
+    # ##############
+
+    # restrict category for test
+    documents = [d for d in documents if get_category_id(d) in range(0, 8)]
+
     shuffle(documents)
 
     kf = KFold(n_splits=int(args.split))
