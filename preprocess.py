@@ -54,9 +54,11 @@ def get_category_dict(file_path):
         cat = {}
         cat['doc_num'], cat['root'], cat['middle'], cat['leaf'] = \
                 [x.strip() for x in line.split("/")]
-        cat['cat_id'] = category_id
-        category_id += 1
-        category_dict[cat['leaf']] = cat
+
+        if cat['root'] not in category_dict:
+            cat['cat_id'] = category_id
+            category_id += 1
+            category_dict[cat['root']] = cat
 
     f.close()
     return category_dict

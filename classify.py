@@ -24,7 +24,7 @@ def get_all_docs(data_path):
 
 def get_category_id(document):
     global category_dict
-    category = document.category.split("/")[-1].strip()
+    category = document.category.split("/")[1].strip()
     return category_dict[category]['cat_id']
 
 
@@ -89,6 +89,7 @@ if __name__ == "__main__":
         print("Need a data/file path")
         exit()
 
+    # get category information
     global category_dict
     category_dict = preprocess.get_category_dict(args.category_file)
 
@@ -100,9 +101,6 @@ if __name__ == "__main__":
     ################
     # train and test
     # ##############
-
-    # restrict category for test
-    documents = [d for d in documents if get_category_id(d) in range(0, 8)]
 
     shuffle(documents)
 
