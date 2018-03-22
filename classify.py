@@ -89,11 +89,11 @@ if __name__ == "__main__":
         print("Need a data/file path")
         exit()
 
+    print("total document size: {}".format(len(documents)))
+
     # get category information
     global category_dict
     category_dict = preprocess.get_category_dict(args.category_file)
-
-    print("total document size: {}".format(len(documents)))
 
     features = Features(documents)
     print("total words: {} {}".format(len(features.word_index_dict.keys()), features.word_size))
