@@ -24,7 +24,7 @@ def get_all_docs(data_path):
 
 def get_category_id(document):
     global category_dict
-    category = document.category.split("/")[1].strip()
+    category = document.root_category
     return category_dict[category]['cat_id']
 
 
